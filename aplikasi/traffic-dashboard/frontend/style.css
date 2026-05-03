@@ -1,0 +1,272 @@
+:root {
+    --primary: #6366f1;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --glass: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: #f8fafc;
+    color: var(--text-main);
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Loading Overlay Styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    display: none; /* Hidden by default */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(99, 102, 241, 0.1);
+    border-top: 5px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+    font-weight: 600;
+    color: var(--primary);
+    letter-spacing: 1px;
+}
+
+/* Background Blobs for Premium Look */
+.background-blob {
+    position: fixed;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(255,255,255,0) 70%);
+    top: -100px;
+    right: -100px;
+    z-index: -1;
+}
+
+.blob-2 {
+    bottom: -100px;
+    left: -100px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(255,255,255,0) 70%);
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--primary);
+}
+
+.header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.location-dropdown {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    padding: 8px 15px;
+    border-radius: 12px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.location-dropdown:hover {
+    background: white;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.date-time {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* Main Status Card */
+.main-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+    margin-bottom: 40px;
+    transition: all 0.5s ease;
+}
+
+.status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.status-info h2 {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    line-height: 1;
+}
+
+.status-info p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    max-width: 400px;
+}
+
+.status-icon i {
+    font-size: 5rem;
+    color: var(--primary);
+    filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
+}
+
+.current-stats {
+    display: flex;
+    gap: 40px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    padding-top: 30px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Forecast Grid */
+.forecast-section h3 {
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.forecast-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    margin-bottom: 40px;
+}
+
+.forecast-item {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.forecast-item:hover {
+    transform: translateY(-5px);
+}
+
+.forecast-time {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.forecast-status {
+    font-weight: 600;
+    font-size: 1rem;
+    display: block;
+}
+
+/* Chart Section */
+.card {
+    background: white;
+    border-radius: 30px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+}
+
+.card-header {
+    margin-bottom: 25px;
+}
+
+.card-header h3 {
+    font-weight: 600;
+}
+
+.card-header p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+canvas {
+    width: 100% !important;
+    height: 300px !important;
+}
+
+@media (max-width: 768px) {
+    .forecast-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .status-header {
+        flex-direction: column-reverse;
+        text-align: center;
+    }
+    .status-icon {
+        margin-bottom: 20px;
+    }
+}

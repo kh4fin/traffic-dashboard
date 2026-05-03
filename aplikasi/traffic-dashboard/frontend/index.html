@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Forecast - Ramalan Lalu Lintas</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Menganalisis Data...</p>
+    </div>
+    <div class="background-blob"></div>
+    <div class="background-blob blob-2"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="bi bi-geo-alt-fill"></i>
+                <span>TrafficForecast</span>
+            </div>
+            <div class="header-right">
+                <select id="locationSelector" class="location-dropdown">
+                    <option value="Simpang_Sudirman">📍 Simpang Sudirman</option>
+                    <option value="Simpang_DewiSartika">📍 Simpang Dewi Sartika</option>
+                    <option value="Simpang_A">📍 Simpang A (Dummy)</option>
+                </select>
+                <div class="date-time" id="currentDate">Rabu, 29 April 2026</div>
+            </div>
+        </header>
+
+        <!-- Main Status Card (Weather Style) -->
+        <div class="main-card" id="mainStatusCard">
+            <div class="status-header">
+                <div class="status-info">
+                    <h2 id="statusLabel">Memuat...</h2>
+                    <p id="statusMessage">Menganalisis pola lalu lintas saat ini...</p>
+                </div>
+                <div class="status-icon">
+                    <i id="mainIcon" class="bi bi-cloud-sun"></i>
+                </div>
+            </div>
+            <div class="current-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Estimasi Kendaraan</span>
+                    <span class="stat-value" id="currentValue">--</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-label">Tingkat Akurasi</span>
+                    <span class="stat-value">Tinggi</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hourly Forecast Section -->
+        <section class="forecast-section">
+            <h3>Prediksi Jam Berikutnya</h3>
+            <div class="forecast-grid" id="forecastGrid">
+                <!-- Forecast items will be injected here -->
+            </div>
+        </section>
+
+        <!-- Visual Chart Section -->
+        <section class="chart-section">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Grafik Tren & Prediksi</h3>
+                    <p>Perbandingan data aktual vs kecerdasan buatan (LSTM)</p>
+                </div>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

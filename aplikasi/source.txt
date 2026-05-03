@@ -1,0 +1,315 @@
+traffic-dashboard/
+|- backend/
+| |- app.py
+|- data/
+| |- traffic.csv
+|- evaluation/
+| |- metrics.py
+|- frontend
+| |- index.html
+| |- script.js
+| |- style.css
+|- model/
+| |- lstm_model.py
+|- preprocessing/
+| |- preprocessing.py
+|- saved_model/
+| |- model.keras
+| |- scaler.pkl
+|- requirements.txt
+
+==============================
+app.py:
+from flask import Flask, jsonify, send_from_directory
+from flask_cors import CORS
+import numpy as np
+import os
+import sys
+
+SCAFFOLD_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(SCAFFOLD_DIR)
+
+from preprocessing.preprocessing import preprocess_multifeature, load_scaler
+from evaluation.metrics import evaluate
+
+app = Flask(__name__)
+CORS(app)
+
+DATA_PATH = os.path.join(SCAFFOLD_DIR, "data", "traffic.csv")
+MODEL_PATH = os.path.join(SCAFFOLD_DIR, "saved_model", "model.keras")
+SCALER_PATH = os.path.join(SCAFFOLD_DIR, "saved_model", "scaler.pkl")
+FRONTEND_DIR = os.path.join(SCAFFOLD_DIR, "frontend")
+
+X_train, X_test, y_train, y_test, scaler = None, None, None, None, None
+model = None
+metrics_cache = None
+
+
+def load_model():
+    global model, X_train, X_test, y_train, y_test, scaler, metrics_cache
+    if model is None:
+        X_train, X_test, y_train, y_test, scaler = preprocess_multifeature(
+            DATA_PATH, window_size=20, test_size=0.2
+        )
+        scaler = load_scaler(SCALER_PATH)
+        from tensorflow.keras.models import load_model as keras_load
+        model = keras_load(MODEL_PATH)
+        y_pred_scaled = model.predict(X_test, verbose=0).flatten()
+        y_pred = scaler.inverse_transform(y_pred_scaled.reshape(-1, 1)).flatten()
+        y_true = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+        metrics_cache = evaluate(y_true, y_pred)
+
+
+@app.route('/')
+def index():
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
+
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory(FRONTEND_DIR, path)
+
+
+@app.route('/api/data', methods=['GET'])
+def get_data():
+    import pandas as pd
+    df = pd.read_csv(DATA_PATH)
+    data = df.to_dict(orient='records')
+    return jsonify({"data": data, "count": len(data)})
+
+
+@app.route('/api/predict', methods=['GET'])
+def get_predict():
+    load_model()
+    y_pred_scaled = model.predict(X_test, verbose=0).flatten()
+    y_pred = scaler.inverse_transform(y_pred_scaled.reshape(-1, 1)).flatten()
+    y_true = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+    return jsonify({
+        "actual": y_true.tolist(),
+        "predicted": y_pred.tolist()
+    })
+
+
+@app.route('/api/evaluate', methods=['GET'])
+def get_evaluate():
+    load_model()
+    return jsonify(metrics_cache)
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
+
+==============================
+metrics.py:
+import numpy as np
+
+
+def calculate_mae(y_true, y_pred):
+    return np.mean(np.abs(y_true - y_pred))
+
+
+def calculate_rmse(y_true, y_pred):
+    return np.sqrt(np.mean((y_true - y_pred) ** 2))
+
+
+def calculate_mape(y_true, y_pred):
+    mask = y_true != 0
+    return np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100
+
+
+def evaluate(y_true, y_pred):
+    mae = calculate_mae(y_true, y_pred)
+    rmse = calculate_rmse(y_true, y_pred)
+    mape = calculate_mape(y_true, y_pred)
+    return {
+        "MAE": float(mae),
+        "RMSE": float(rmse),
+        "MAPE": float(mape)
+    }
+
+
+if __name__ == "__main__":
+    y_true = np.array([100, 150, 200, 180])
+    y_pred = np.array([95, 155, 190, 185])
+    metrics = evaluate(y_true, y_pred)
+    print("Metrics:", metrics)
+
+==============================
+lstm_model.py:
+import os
+import sys
+import numpy as np
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import (LSTM, Dense, Dropout, Layer, 
+                               Bidirectional, Input, Conv1D, MaxPooling1D,
+                               GlobalAveragePooling1D, BatchNormalization)
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
+from tensorflow.keras.optimizers import Adam
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from preprocessing.preprocessing import preprocess_multifeature
+from evaluation.metrics import evaluate
+
+SCAFFOLD_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def build_cnn_lstm(input_shape):
+    model = Sequential([
+        Input(shape=input_shape),
+        
+        Conv1D(64, 3, activation='relu', padding='same'),
+        Conv1D(64, 3, activation='relu', padding='same'),
+        MaxPooling1D(2),
+        Dropout(0.2),
+        
+        Bidirectional(LSTM(128, return_sequences=True)),
+        Dropout(0.2),
+        
+        Bidirectional(LSTM(64, return_sequences=True)),
+        Dropout(0.2),
+        
+        GlobalAveragePooling1D(),
+        
+        Dense(64, activation='relu'),
+        BatchNormalization(),
+        Dropout(0.3),
+        
+        Dense(32, activation='relu'),
+        Dense(1)
+    ])
+    
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
+    return model
+
+
+def train_model(X_train, y_train, epochs=200, batch_size=16, verbose=1):
+    model = build_cnn_lstm((X_train.shape[1], X_train.shape[2]))
+    
+    early_stop = EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True, verbose=1)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=8, min_lr=0.00001, verbose=1)
+    
+    history = model.fit(
+        X_train, y_train,
+        epochs=epochs,
+        batch_size=batch_size,
+        validation_split=0.15,
+        callbacks=[early_stop, reduce_lr],
+        verbose=verbose
+    )
+    
+    return model, history
+
+
+def predict(model, X_test):
+    return model.predict(X_test, verbose=0).flatten()
+
+
+if __name__ == "__main__":
+    data_path = os.path.join(SCAFFOLD_DIR, "data", "traffic.csv")
+    model_path = os.path.join(SCAFFOLD_DIR, "saved_model", "model.keras")
+    scaler_path = os.path.join(SCAFFOLD_DIR, "saved_model", "scaler.pkl")
+    
+    window_size = 20
+    test_size = 0.1
+    
+    print("Loading data with feature engineering (10% test)...")
+    X_train, X_test, y_train, y_test, scaler = preprocess_multifeature(
+        data_path, window_size=window_size, test_size=test_size
+    )
+    print(f"Train: {X_train.shape}, Test: {X_test.shape}")
+    
+    print(f"\nTraining CNN-BiLSTM model (epochs=200, batch_size=16, test=10%)...")
+    model, history = train_model(X_train, y_train, epochs=200, batch_size=16)
+    
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    model.save(model_path)
+    
+    from preprocessing.preprocessing import save_scaler
+    save_scaler(scaler, scaler_path)
+    print(f"\nModel saved to {model_path}")
+    
+    y_pred_scaled = predict(model, X_test)
+    y_pred = scaler.inverse_transform(y_pred_scaled.reshape(-1, 1)).flatten()
+    y_true = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+    
+    metrics = evaluate(y_true, y_pred)
+    print(f"\nMetrics - MAE: {metrics['MAE']:.2f}, RMSE: {metrics['RMSE']:.2f}, MAPE: {metrics['MAPE']:.2f}%")
+    
+    if metrics['MAPE'] < 10:
+        print("\nTARGET MAPE < 10% TERCAPAI!")
+
+==============================
+preprocessing.py:
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.model_selection import train_test_split
+import pickle
+import os
+
+
+def load_data(filepath):
+    df = pd.read_csv(filepath)
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df = df.sort_values('timestamp').reset_index(drop=True)
+    df = df.dropna()
+    return df
+
+
+def create_sequences(data, window_size=20):
+    X, y = [], []
+    for i in range(len(data) - window_size):
+        X.append(data[i:(i + window_size)])
+        y.append(data[i + window_size])
+    return np.array(X), np.array(y)
+
+
+def preprocess_multifeature(filepath, window_size=20, test_size=0.05):
+    df = load_data(filepath)
+    values = df['jumlah_kendaraan'].values.reshape(-1, 1)
+
+    scaler_y = MinMaxScaler()
+    scaled_y = scaler_y.fit_transform(values).flatten()
+
+    df['hour_sin'] = np.sin(2 * np.pi * df['jam'] / 24)
+    df['hour_cos'] = np.cos(2 * np.pi * df['jam'] / 24)
+    df['day_sin'] = np.sin(2 * np.pi * df['timestamp'].dt.dayofweek / 7)
+    df['day_cos'] = np.cos(2 * np.pi * df['timestamp'].dt.dayofweek / 7)
+    df['is_rush_hour'] = ((df['jam'] >= 7) & (df['jam'] <= 9) | (df['jam'] >= 16) & (df['jam'] <= 19)).astype(float)
+    df['is_night'] = ((df['jam'] >= 22) | (df['jam'] <= 5)).astype(float)
+
+    feature_scaler = StandardScaler()
+    features = df[['hour_sin', 'hour_cos', 'day_sin', 'day_cos', 'is_rush_hour', 'is_night']].values
+    scaled_features = feature_scaler.fit_transform(features)
+
+    main_seq, y = create_sequences(scaled_y, window_size)
+    feat_seq = []
+    for i in range(len(scaled_features) - window_size):
+        feat_seq.append(scaled_features[i:(i + window_size)])
+    feat_seq = np.array(feat_seq)
+
+    X = np.concatenate([main_seq.reshape(-1, window_size, 1), feat_seq], axis=-1)
+
+    indices = np.arange(len(X))
+    train_idx, test_idx = train_test_split(indices, test_size=test_size, random_state=42)
+    X_train, X_test = X[train_idx], X[test_idx]
+    y_train, y_test = y[train_idx], y[test_idx]
+
+    return X_train, X_test, y_train, y_test, scaler_y
+
+
+def save_scaler(scaler, filepath):
+    with open(filepath, 'wb') as f:
+        pickle.dump(scaler, f)
+
+
+def load_scaler(filepath):
+    with open(filepath, 'rb') as f:
+        return pickle.load(f)
+
+
+if __name__ == "__main__":
+    data_path = os.path.join(os.path.dirname(__file__), "..", "data", "traffic.csv")
+    X_train, X_test, y_train, y_test, scaler = preprocess_multifeature(data_path, window_size=20, test_size=0.05)
+    print(f"Train shape: X={X_train.shape}, y={y_train.shape}")
+    print(f"Test shape: X={X_test.shape}, y={y_test.shape}")
