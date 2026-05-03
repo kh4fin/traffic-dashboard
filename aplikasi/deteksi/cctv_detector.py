@@ -7,8 +7,12 @@ from ultralytics import YOLO
 
 # --- KONFIGURASI PENGUJIAN LOKAL ---
 CCTV_SOURCES = [
-    {"nama": "Simpang_Sudirman", "url": "https://balitower.livedu.com/atcs-bali/bali-02.m3u8"},
-    {"nama": "Simpang_DewiSartika", "url": "https://balitower.livedu.com/atcs-bali/bali-03.m3u8"},
+    {"nama": "Semampir", "url": "https://pplterpadu.kedirikota.go.id:8888/semampir/stream.m3u8"},
+    {"nama": "Water Torn", "url": "https://pplterpadu.kedirikota.go.id:8888/water_torn/stream.m3u8"},
+    {"nama": "A Yani Utara", "url": "https://pplterpadu.kedirikota.go.id:8888/a_yani_utara/stream.m3u8"},
+    {"nama": "Jetis", "url": "https://pplterpadu.kedirikota.go.id:8888/jetis/stream.m3u8"},
+    {"nama": "Dandangan", "url": "https://pplterpadu.kedirikota.go.id:8888/dandangan/stream.m3u8"},
+    {"nama": "Nabatiasa", "url": "https://pplterpadu.kedirikota.go.id:8888/nabatiasa/stream.m3u8"}
 ]
 MODEL_PATH = "yolo11n.pt"  
 DB_PATH = "traffic.db" # Database SQLite
