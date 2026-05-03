@@ -1,0 +1,6 @@
+https://pplterpadu.kedirikota.go.id:8888/semampir/stream.m3u8
+https://pplterpadu.kedirikota.go.id:8888/water_torn/stream.m3u8
+https://pplterpadu.kedirikota.go.id:8888/a_yani_utara/stream.m3u8
+https://pplterpadu.kedirikota.go.id:8888/jetis/stream.m3u8
+https://pplterpadu.kedirikota.go.id:8888/dandangan/stream.m3u8
+https://pplterpadu.kedirikota.go.id:8888/nabatiasa/stream.m3u8
