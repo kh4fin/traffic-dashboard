@@ -51,7 +51,7 @@ function updateForecast(forecast) {
     });
 }
 
-async function loadDashboard(location = 'Simpang_A') {
+async function loadDashboard(location = 'Dandangan') {
     const loading = document.getElementById('loadingOverlay');
     loading.style.display = 'flex'; // Tampilkan loading
     

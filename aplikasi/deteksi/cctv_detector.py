@@ -5,7 +5,6 @@ import os
 from datetime import datetime
 from ultralytics import YOLO
 
-# --- KONFIGURASI PENGUJIAN LOKAL ---
 CCTV_SOURCES = [
     {"nama": "Semampir", "url": "https://pplterpadu.kedirikota.go.id:8888/semampir/stream.m3u8"},
     {"nama": "Water Torn", "url": "https://pplterpadu.kedirikota.go.id:8888/water_torn/stream.m3u8"},
@@ -15,9 +14,8 @@ CCTV_SOURCES = [
     {"nama": "Nabatiasa", "url": "https://pplterpadu.kedirikota.go.id:8888/nabatiasa/stream.m3u8"}
 ]
 MODEL_PATH = "yolo11n.pt"  
-DB_PATH = "traffic.db" # Database SQLite
-INTERVAL_SECONDS = 30  # Kita percepat jadi 30 detik untuk testing
-# --------------------
+DB_PATH = "traffic.db" 
+INTERVAL_SECONDS = 60  
 
 def init_db():
     # Inisialisasi database SQLite

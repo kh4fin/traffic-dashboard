@@ -16,7 +16,9 @@ CORS(app)
 # Data dummy sebagai pondasi (untuk history & metrics)
 DATA_PATH = os.path.join(SCAFFOLD_DIR, "data", "traffic.csv")
 # Database asli dari detektor (untuk input ramalan real-time)
-DB_REAL_PATH = os.path.join(SCAFFOLD_DIR, "deteksi", "traffic.db")
+# Karena folder 'deteksi' ada di luar folder 'traffic-dashboard'
+ROOT_DIR = os.path.dirname(SCAFFOLD_DIR) 
+DB_REAL_PATH = os.path.join(ROOT_DIR, "deteksi", "traffic.db")
 MODEL_PATH = os.path.join(SCAFFOLD_DIR, "saved_model", "model.keras")
 SCALER_PATH = os.path.join(SCAFFOLD_DIR, "saved_model", "scaler.pkl")
 FRONTEND_DIR = os.path.join(SCAFFOLD_DIR, "frontend")
@@ -111,33 +113,51 @@ def get_predict():
         print(f"MENGGUNAKAN DATA ASLI CCTV untuk ramalan {lokasi}!")
 
     # Prediksi menggunakan input yang terpilih (Asli atau Dummy)
-    y_pred_scaled = model.predict(X_input, verbose=0).flatten()
-    y_pred = scaler_input.inverse_transform(y_pred_scaled.reshape(-1, 1)).flatten()
+    # y_pred_scaled adalah hasil prediksi untuk data yang ada di X_input
+    y_pred_all_scaled = model.predict(X_input, verbose=0)
     
-    # Untuk data aktual (actual), kita tetap ambil dari data pondasi agar grafik tidak kosong
+    # --- LOGIKA RAMALAN MASA DEPAN (Recursive) ---
+    forecast = []
+    current_window = X_input[-1:].copy() # Ambil window paling terakhir
+    
+    for i in range(1, 6):
+        # Prediksi 1 langkah ke depan
+        next_pred_scaled = model.predict(current_window, verbose=0)
+        next_val = float(scaler_input.inverse_transform(next_pred_scaled)[0][0])
+        
+        forecast.append({
+            "time": f"Jam ke-{i}",
+            "value": round(next_val),
+            "status": get_traffic_status(next_val)["status"]
+        })
+        
+        # Update window untuk prediksi berikutnya:
+        # Geser data, masukkan hasil prediksi tadi sebagai input baru
+        new_row = current_window[0, 1:, :].copy() # Buang data terlama
+        
+        # Buat baris baru (prediksi tadi + fitur waktu yang disederhanakan)
+        # Untuk simulasi masa depan, kita asumsikan fitur waktu tetap/bergeser sedikit
+        last_features = current_window[0, -1, 1:] 
+        new_entry = np.append([next_pred_scaled[0, 0]], last_features).reshape(1, -1)
+        
+        current_window = np.append(new_row, new_entry, axis=0).reshape(1, 20, -1)
+    # ----------------------------------------------
+
+    # Konversi hasil prediksi X_input ke unit asli untuk grafik
+    y_pred = scaler_input.inverse_transform(y_pred_all_scaled).flatten()
+    
+    # Untuk data aktual (actual), tetap ambil dari data dummy sebagai referensi tren
     _, X_base, _, y_test_base, scaler_base = preprocess_multifeature(
         DATA_PATH, location='Simpang_A', window_size=20, test_size=0.2
     )
     y_true = scaler_base.inverse_transform(y_test_base.reshape(-1, 1)).flatten()
     
-    # Ambil prediksi terbaru
     latest_pred = float(y_pred[-1])
     status_info = get_traffic_status(latest_pred)
-    
-    # Ambil ramalan 5 jam ke depan (sebagai contoh simulasi)
-    forecast = []
-    for i in range(1, 6):
-        if i < len(y_pred):
-            val = float(y_pred[-i])
-            forecast.append({
-                "time": f"+{i} Jam",
-                "value": round(val),
-                "status": get_traffic_status(val)["status"]
-            })
 
     return jsonify({
-        "actual": y_true.tolist(),
-        "predicted": y_pred.tolist(),
+        "actual": y_true.tolist()[-40:],
+        "predicted": y_pred.tolist()[-40:],
         "latest": {
             "value": round(latest_pred),
             **status_info
