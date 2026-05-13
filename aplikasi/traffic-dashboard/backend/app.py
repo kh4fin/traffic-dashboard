@@ -13,12 +13,9 @@ from evaluation.metrics import evaluate
 app = Flask(__name__)
 CORS(app)
 
-# Data dummy sebagai pondasi (untuk history & metrics)
 DATA_PATH = os.path.join(SCAFFOLD_DIR, "data", "traffic.csv")
-# Database asli dari detektor (untuk input ramalan real-time)
-# Karena folder 'deteksi' ada di luar folder 'traffic-dashboard'
 ROOT_DIR = os.path.dirname(SCAFFOLD_DIR) 
-DB_REAL_PATH = os.path.join(ROOT_DIR, "deteksi", "traffic.db")
+DB_REAL_PATH = os.path.join(ROOT_DIR, "deteksi", "master_traffic.db")
 MODEL_PATH = os.path.join(SCAFFOLD_DIR, "saved_model", "model.keras")
 SCALER_PATH = os.path.join(SCAFFOLD_DIR, "saved_model", "scaler.pkl")
 FRONTEND_DIR = os.path.join(SCAFFOLD_DIR, "frontend")
