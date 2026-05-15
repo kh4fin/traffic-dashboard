@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 
-VPS_IP = "152.42.224.165"
+VPS_IP = "167.99.71.227"
 VPS_USER = "root"
 
 REMOTE_DB = "/root/traffic.db"
